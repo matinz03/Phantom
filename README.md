@@ -1,5 +1,7 @@
 # Phantom VPN Bot Suite
 
+Version: `1.0.0`
+
 Phantom is an asynchronous dual-bot Telegram system for selling VPN subscription links.
 
 - **Main bot:** user-facing shop, wallet balance, purchases, and purchase history.
