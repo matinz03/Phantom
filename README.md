@@ -45,6 +45,10 @@ ADMIN_BOT_TOKEN=654321:XYZ-ABC9876
 ADMIN_USER_ID=123456789
 ADMIN_PASSWORD=replace-with-a-strong-password
 DB_URL=sqlite+aiosqlite:///vpn_shop.db
+SUPPORT_URL=https://t.me/YourSupport
+SUPPORT_HANDLE=@YourSupport
+CHANNEL_HANDLE=@YourChannel
+SESSION_TIMEOUT_MINUTES=30
 ```
 
 Run both bots:

@@ -31,6 +31,9 @@ class PriceService:
     
     @staticmethod
     async def update_price(session: AsyncSession, volume_gb: int, new_price: int) -> bool:
+        if new_price <= 0:
+            return False
+
         stmt = select(Price).where(Price.volume_gb == volume_gb)
         result = await session.execute(stmt)
         price_obj = result.scalar_one_or_none()

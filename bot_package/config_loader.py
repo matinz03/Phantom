@@ -15,12 +15,24 @@ def _parse_admin_user_id() -> int:
         return 0
 
 
+def _parse_int_env(name: str, default: int) -> int:
+    raw_value = os.getenv(name, str(default)).strip()
+    try:
+        return int(raw_value)
+    except ValueError:
+        return default
+
+
 class BotConfig:
     MAIN_BOT_TOKEN = os.getenv("MAIN_BOT_TOKEN", "").strip()
     ADMIN_BOT_TOKEN = os.getenv("ADMIN_BOT_TOKEN", "").strip()
     ADMIN_USER_ID = _parse_admin_user_id()
     ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "").strip()
     DB_URL = os.getenv("DB_URL", "sqlite+aiosqlite:///vpn_shop.db").strip()
+    SUPPORT_URL = os.getenv("SUPPORT_URL", "https://t.me/YourSupport").strip()
+    SUPPORT_HANDLE = os.getenv("SUPPORT_HANDLE", "@YourSupport").strip()
+    CHANNEL_HANDLE = os.getenv("CHANNEL_HANDLE", "@YourChannel").strip()
+    SESSION_TIMEOUT_MINUTES = _parse_int_env("SESSION_TIMEOUT_MINUTES", 30)
 
     @classmethod
     def validate(cls) -> None:
@@ -37,5 +49,9 @@ class BotConfig:
             errors.append("ADMIN_PASSWORD must not use the unsafe default 'admin123'")
         if not cls.DB_URL:
             errors.append("DB_URL is required")
+        if not cls.SUPPORT_URL.startswith(("https://t.me/", "http://", "https://")):
+            errors.append("SUPPORT_URL must be a valid URL")
+        if cls.SESSION_TIMEOUT_MINUTES <= 0:
+            errors.append("SESSION_TIMEOUT_MINUTES must be positive")
         if errors:
             raise RuntimeError("Invalid bot configuration: " + "; ".join(errors))
