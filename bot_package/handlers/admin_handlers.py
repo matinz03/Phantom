@@ -10,7 +10,6 @@ from ..utils.validators import extract_links_from_text
 from ..services.inventory_service import InventoryService
 from ..services.price_service import PriceService
 from ..services.user_service import UserService
-from ..handlers.auth_handlers import require_password, check_password, ENTER_PASSWORD
 from datetime import datetime, timezone
 
 # state های کانورسیشن
@@ -24,10 +23,19 @@ def require_auth(func):
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not AuthManager.is_authenticated(update.effective_user.id):
             await update.effective_message.reply_text(AUTH_EXPIRED)
-            return await require_password(update, context)
+            context.user_data['awaiting_password'] = True
+            return
         AuthManager.refresh_session(update.effective_user.id)
         return await func(update, context)
     return wrapper
+
+
+async def delete_later(context: ContextTypes.DEFAULT_TYPE):
+    message = context.job.data
+    try:
+        await message.delete()
+    except Exception:
+        pass
 
 # ============== منوی اصلی ==============
 async def admin_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -62,7 +70,7 @@ async def check_admin_password(update: Update, context: ContextTypes.DEFAULT_TYP
         context.user_data['awaiting_password'] = False
         
         success_msg = await update.message.reply_text(AUTH_SUCCESS)
-        context.job_queue.run_once(lambda ctx: success_msg.delete(), 3)
+        context.job_queue.run_once(delete_later, 3, data=success_msg)
         
         await update.message.reply_text(
             ADMIN_MAIN_MENU.format(update.effective_user.first_name),
@@ -70,7 +78,7 @@ async def check_admin_password(update: Update, context: ContextTypes.DEFAULT_TYP
         )
     else:
         fail_msg = await update.message.reply_text(AUTH_FAILED)
-        context.job_queue.run_once(lambda ctx: fail_msg.delete(), 5)
+        context.job_queue.run_once(delete_later, 5, data=fail_msg)
 
 # ============== نویگیشن منوها ==============
 @require_auth
