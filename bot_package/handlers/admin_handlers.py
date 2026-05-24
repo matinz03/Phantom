@@ -53,7 +53,7 @@ from ..utils.validators import extract_links_from_text
 
 def require_auth(func):
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if update.effective_user.id != BotConfig.ADMIN_USER_ID:
+        if not BotConfig.is_admin(update.effective_user.id):
             await update.effective_message.reply_text("Access denied.")
             return ConversationHandler.END
         if not AuthManager.is_authenticated(update.effective_user.id):
@@ -75,7 +75,7 @@ async def delete_later(context: ContextTypes.DEFAULT_TYPE):
 
 
 async def admin_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != BotConfig.ADMIN_USER_ID:
+    if not BotConfig.is_admin(update.effective_user.id):
         await update.message.reply_text("Access denied.")
         return
 
@@ -91,7 +91,7 @@ async def admin_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def check_admin_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != BotConfig.ADMIN_USER_ID:
+    if not BotConfig.is_admin(update.effective_user.id):
         return
     if not context.user_data.get("awaiting_password"):
         return

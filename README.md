@@ -3,7 +3,7 @@
 Phantom is an asynchronous dual-bot Telegram system for selling VPN subscription links.
 
 - **Main bot:** user-facing shop, wallet balance, purchases, and purchase history.
-- **Admin bot:** inventory, prices, wallet charging, user lookup, and sales reports.
+- **Admin bot:** inventory, prices, wallet charging, user lookup, and sales reports for one or more configured admins.
 
 The implementation uses Python, `python-telegram-bot`, async SQLAlchemy, and SQLite by default.
 
@@ -43,6 +43,8 @@ Create a `.env` file in the project root:
 MAIN_BOT_TOKEN=123456:ABC-DEF1234
 ADMIN_BOT_TOKEN=654321:XYZ-ABC9876
 ADMIN_USER_ID=123456789
+# Optional: comma-separated list for multiple admins. ADMIN_USER_ID still works for one admin.
+ADMIN_USER_IDS=123456789,987654321
 ADMIN_PASSWORD=replace-with-a-strong-password
 DB_URL=sqlite+aiosqlite:///vpn_shop.db
 SUPPORT_URL=https://t.me/YourSupport
@@ -83,7 +85,7 @@ Run a syntax/import smoke check:
 
 ```bash
 python -m compileall -q bot_package run.py tests
-MAIN_BOT_TOKEN=123:abc ADMIN_BOT_TOKEN=456:def ADMIN_USER_ID=123456 ADMIN_PASSWORD=strong-password python -c "import bot_package.run; import bot_package.handlers.admin_handlers; import bot_package.handlers.user_handlers; print('imports ok')"
+MAIN_BOT_TOKEN=123:abc ADMIN_BOT_TOKEN=456:def ADMIN_USER_IDS=123456,789012 ADMIN_PASSWORD=strong-password python -c "import bot_package.run; import bot_package.handlers.admin_handlers; import bot_package.handlers.user_handlers; print('imports ok')"
 ```
 
 ## Manual Smoke Test
