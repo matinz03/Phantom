@@ -1,0 +1,15 @@
+[Unit]
+Description=Phantom Telegram bots
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/phantom
+EnvironmentFile=/opt/phantom/.env
+ExecStart=/opt/phantom/venv/bin/python -m bot_package.run
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

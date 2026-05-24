@@ -124,6 +124,43 @@ Supported permissions are `inventory`, `prices`, `users`, and `reports`. Use `al
 - Put the bot behind process supervision such as systemd, Docker, or a managed worker service.
 - Keep `LOG_LEVEL=INFO` in normal operation and use `DEBUG` only during troubleshooting.
 
+## Auto Update From Git On Server
+
+The repo includes a conservative polling updater for Linux servers. It fetches your Git branch, fast-forwards only when the server has no local changes, installs dependency updates when `bot_package/requirements.txt` changes, and restarts the bot service.
+
+Example server layout:
+
+```bash
+sudo git clone https://github.com/matinz03/Phantom.git /opt/phantom
+cd /opt/phantom
+sudo git switch main
+sudo python3 -m venv venv
+sudo ./venv/bin/python -m pip install -r bot_package/requirements.txt
+sudo cp deploy/systemd/phantom-bot.service /etc/systemd/system/phantom-bot.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now phantom-bot.service
+```
+
+Install the auto-update timer:
+
+```bash
+cd /opt/phantom
+sudo APP_DIR=/opt/phantom REMOTE=origin BRANCH=main SERVICE_NAME=phantom-bot.service bash scripts/install_auto_update.sh
+```
+
+Check logs:
+
+```bash
+systemctl status phantom-auto-update.timer
+journalctl -u phantom-auto-update.service -n 100 --no-pager
+```
+
+Run one update manually:
+
+```bash
+sudo APP_DIR=/opt/phantom REMOTE=origin BRANCH=main SERVICE_NAME=phantom-bot.service /usr/local/bin/phantom-update-from-git
+```
+
 ## Current Capabilities
 
 - User registration on `/start`
