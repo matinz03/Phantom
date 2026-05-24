@@ -1,0 +1,12 @@
+[Unit]
+Description=Fetch and deploy Phantom updates from Git
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+Environment=APP_DIR=/opt/phantom
+Environment=REMOTE=origin
+Environment=BRANCH=main
+Environment=SERVICE_NAME=phantom-bot.service
+ExecStart=/usr/local/bin/phantom-update-from-git
