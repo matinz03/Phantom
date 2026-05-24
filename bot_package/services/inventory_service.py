@@ -1,6 +1,6 @@
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, update
 from ..models import Config
 from typing import List, Optional
 from datetime import datetime, timezone, timedelta
@@ -45,10 +45,20 @@ class InventoryService:
     
     @staticmethod
     async def sell_config(session: AsyncSession, config: Config, user_id: int):
-        config.is_sold = True
-        config.sold_to_user_id = user_id
-        config.sold_at = datetime.now(timezone.utc)
-        await session.commit()
+        stmt = (
+            update(Config)
+            .where(Config.id == config.id, Config.is_sold == False)
+            .values(
+                is_sold=True,
+                sold_to_user_id=user_id,
+                sold_at=datetime.now(timezone.utc),
+            )
+        )
+        result = await session.execute(stmt)
+        if result.rowcount != 1:
+            return False
+        await session.refresh(config)
+        return True
     
     @staticmethod
     async def get_sold_configs_by_period(session: AsyncSession, days: int) -> List[Config]:

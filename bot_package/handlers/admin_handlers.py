@@ -1,7 +1,8 @@
 from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ConversationHandler
+from sqlalchemy import select
 from ..database import async_session
-from ..models import Config
+from ..models import Config, Purchase
 from ..config_loader import BotConfig
 from ..auth import AuthManager
 from ..utils.keyboards import *
@@ -10,7 +11,7 @@ from ..utils.validators import extract_links_from_text
 from ..services.inventory_service import InventoryService
 from ..services.price_service import PriceService
 from ..services.user_service import UserService
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 # state های کانورسیشن
 (CHOOSE_VOLUME_ADD, COLLECT_LINKS,
@@ -375,6 +376,36 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 # ============== کانورسیشن هندلرها ==============
+@require_auth
+async def sales_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    days = int(query.data.split("_")[1])
+    period_names = {1: "today", 7: "this week", 30: "this month"}
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+
+    async with async_session() as session:
+        result = await session.execute(select(Purchase).where(Purchase.purchased_at >= since))
+        purchases = result.scalars().all()
+
+    total_revenue = sum(purchase.price for purchase in purchases)
+    volume_stats = {}
+    for purchase in purchases:
+        volume_stats[purchase.volume_gb] = volume_stats.get(purchase.volume_gb, 0) + 1
+
+    message = f"Sales report for {period_names.get(days, f'{days} days')}\n\n"
+    message += f"Sales count: {len(purchases)}\n"
+    message += f"Total revenue: {total_revenue:,}\n\n"
+
+    if volume_stats:
+        message += "By volume:\n"
+        for volume, count in sorted(volume_stats.items()):
+            message += f"{volume}GB: {count}\n"
+
+    await query.edit_message_text(message, reply_markup=admin_reports_keyboard())
+
+
 add_config_conv = ConversationHandler(
     entry_points=[CallbackQueryHandler(add_config_start, pattern="^admin_add_config$")],
     states={
