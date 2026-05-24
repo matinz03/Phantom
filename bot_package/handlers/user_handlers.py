@@ -14,6 +14,7 @@ from ..utils.messages import (
     MAIN_MENU_TEXT,
     NO_PURCHASE,
     PURCHASE_SUCCESS,
+    SUPPORT_HANDLE,
     WALLET_TEXT,
 )
 
@@ -36,7 +37,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         MAIN_MENU_TEXT,
         reply_markup=main_menu_keyboard(),
-        parse_mode=constants.ParseMode.MARKDOWN_V2,
+        parse_mode=constants.ParseMode.MARKDOWN,
     )
 
 
@@ -46,7 +47,7 @@ async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await query.edit_message_text(
         MAIN_MENU_TEXT,
         reply_markup=main_menu_keyboard(),
-        parse_mode=constants.ParseMode.MARKDOWN_V2,
+        parse_mode=constants.ParseMode.MARKDOWN,
     )
 
 
@@ -60,7 +61,7 @@ async def buy_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(
         BUY_MENU_TEXT,
         reply_markup=buy_volume_keyboard(prices),
-        parse_mode=constants.ParseMode.MARKDOWN_V2,
+        parse_mode=constants.ParseMode.MARKDOWN,
     )
 
 
@@ -69,9 +70,9 @@ async def wallet_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = await get_or_create_user(query.from_user.id, query.from_user.first_name, query.from_user.username)
     await query.answer()
     await query.edit_message_text(
-        WALLET_TEXT.format(f"{user.wallet_balance:,}"),
+        WALLET_TEXT.format(f"{user.wallet_balance:,}", SUPPORT_HANDLE),
         reply_markup=wallet_keyboard(),
-        parse_mode=constants.ParseMode.MARKDOWN_V2,
+        parse_mode=constants.ParseMode.MARKDOWN,
     )
 
 
@@ -130,7 +131,7 @@ async def process_purchase(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text(
             PURCHASE_SUCCESS.format(volume, f"{price:,}", config.sub_link),
             reply_markup=back_to_main(),
-            parse_mode=constants.ParseMode.MARKDOWN_V2,
+            parse_mode=constants.ParseMode.MARKDOWN,
         )
 
 
@@ -140,7 +141,7 @@ async def help_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(
         HELP_TEXT,
         reply_markup=back_to_main(),
-        parse_mode=constants.ParseMode.MARKDOWN_V2,
+        parse_mode=constants.ParseMode.MARKDOWN,
     )
 
 
@@ -174,7 +175,7 @@ async def history_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(
         text,
         reply_markup=back_to_main(),
-        parse_mode=constants.ParseMode.MARKDOWN_V2,
+        parse_mode=constants.ParseMode.MARKDOWN,
     )
 
 

@@ -18,6 +18,10 @@ ADMIN_BOT_TOKEN=
 ADMIN_USER_ID=
 ADMIN_PASSWORD=
 DB_URL=sqlite+aiosqlite:///vpn_shop.db
+SUPPORT_URL=https://t.me/YourSupport
+SUPPORT_HANDLE=@YourSupport
+CHANNEL_HANDLE=@YourChannel
+SESSION_TIMEOUT_MINUTES=30
 EOFENV
   echo "Created .env. Fill in the Telegram tokens, admin ID, and admin password before running."
 fi

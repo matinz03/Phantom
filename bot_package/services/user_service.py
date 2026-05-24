@@ -20,6 +20,9 @@ class UserService:
     
     @staticmethod
     async def charge_wallet(session: AsyncSession, telegram_id: int, amount: int, admin_id: int) -> bool:
+        if amount <= 0:
+            return False
+
         stmt = select(User).where(User.telegram_id == telegram_id)
         result = await session.execute(stmt)
         user = result.scalar_one_or_none()
