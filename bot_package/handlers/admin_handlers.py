@@ -16,11 +16,13 @@ from ..config_loader import BotConfig
 from ..database import async_session
 from ..models import Purchase
 from ..services.inventory_service import InventoryService
+from ..services.admin_service import ALL_PERMISSIONS, AdminService, normalize_permissions
 from ..services.price_service import PriceService
 from ..services.user_service import UserService
 from ..utils.keyboards import (
     admin_inventory_keyboard,
     admin_main_keyboard,
+    admin_management_keyboard,
     admin_prices_keyboard,
     admin_reports_keyboard,
     admin_users_keyboard,
@@ -51,33 +53,61 @@ from ..utils.validators import extract_links_from_text
 (CHOOSE_VOLUME_ADD, COLLECT_LINKS, CHOOSE_VOLUME_PRICE, ENTER_NEW_PRICE, SEARCH_USER, CHARGE_USER_ID, CHARGE_AMOUNT) = range(7)
 
 
-def require_auth(func):
-    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if not BotConfig.is_admin(update.effective_user.id):
-            await update.effective_message.reply_text("Access denied.")
-            return ConversationHandler.END
-        if not AuthManager.is_authenticated(update.effective_user.id):
-            context.user_data["awaiting_password"] = True
-            await update.effective_message.reply_text(AUTH_EXPIRED)
-            return ConversationHandler.END
-        AuthManager.refresh_session(update.effective_user.id)
-        return await func(update, context)
+def require_auth(func=None, *, permission: str | None = None, owner_only: bool = False):
+    def decorator(handler_func):
+        async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
+            async with async_session() as session:
+                if owner_only:
+                    is_allowed = await AdminService.is_owner(session, update.effective_user.id)
+                else:
+                    is_allowed = await AdminService.can_access(session, update.effective_user.id, permission)
 
-    return wrapper
+            if not is_allowed:
+                await update.effective_message.reply_text("Access denied.")
+                return ConversationHandler.END
+
+            if not AuthManager.is_authenticated(update.effective_user.id):
+                context.user_data["awaiting_password"] = True
+                await update.effective_message.reply_text(AUTH_EXPIRED)
+                return ConversationHandler.END
+
+            AuthManager.refresh_session(update.effective_user.id)
+            return await handler_func(update, context)
+
+        return wrapper
+
+    if func is not None:
+        return decorator(func)
+    return decorator
 
 
-async def delete_later(context: ContextTypes.DEFAULT_TYPE):
-    message = context.job.data
-    try:
-        await message.delete()
-    except Exception:
-        pass
+async def is_known_admin(user_id: int) -> bool:
+    async with async_session() as session:
+        return await AdminService.can_access(session, user_id)
+
+
+async def is_owner(user_id: int) -> bool:
+    async with async_session() as session:
+        return await AdminService.is_owner(session, user_id)
+
+
+async def require_owner_message(update: Update) -> bool:
+    if not await is_owner(update.effective_user.id):
+        await update.effective_message.reply_text("Access denied. Owner permissions are required.")
+        return False
+    if not AuthManager.is_authenticated(update.effective_user.id):
+        await update.effective_message.reply_text(AUTH_EXPIRED)
+        return False
+    return True
 
 
 async def admin_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not BotConfig.is_admin(update.effective_user.id):
-        await update.message.reply_text("Access denied.")
-        return
+    if not await is_known_admin(update.effective_user.id):
+        if not BotConfig.is_admin(update.effective_user.id):
+            await update.effective_message.reply_text("Access denied.")
+            return
+        async with async_session() as session:
+            await AdminService.sync_configured_admins(session)
 
     if AuthManager.is_authenticated(update.effective_user.id):
         await update.message.reply_text(
@@ -91,7 +121,7 @@ async def admin_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def check_admin_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not BotConfig.is_admin(update.effective_user.id):
+    if not await is_known_admin(update.effective_user.id):
         return
     if not context.user_data.get("awaiting_password"):
         return
@@ -117,6 +147,14 @@ async def check_admin_password(update: Update, context: ContextTypes.DEFAULT_TYP
     context.job_queue.run_once(delete_later, 5, data=fail_msg)
 
 
+async def delete_later(context: ContextTypes.DEFAULT_TYPE):
+    message = context.job.data
+    try:
+        await message.delete()
+    except Exception:
+        pass
+
+
 @require_auth
 async def admin_menu_navigation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -134,6 +172,22 @@ async def admin_menu_navigation(update: Update, context: ContextTypes.DEFAULT_TY
     await query.edit_message_text(text, reply_markup=keyboard)
 
 
+@require_auth(owner_only=True)
+async def admin_management_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    await query.edit_message_text(
+        "Admin management\n\n"
+        "Commands:\n"
+        "/admins\n"
+        "/addadmin <telegram_id> <permissions>\n"
+        "/removeadmin <telegram_id>\n"
+        "/setadminperms <telegram_id> <permissions>\n\n"
+        f"Permissions: {', '.join(ALL_PERMISSIONS)} or all",
+        reply_markup=admin_management_keyboard(),
+    )
+
+
 @require_auth
 async def admin_logout(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -142,7 +196,7 @@ async def admin_logout(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text("Logged out. Send /start to log in again.")
 
 
-@require_auth
+@require_auth(permission="inventory")
 async def add_config_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -150,7 +204,7 @@ async def add_config_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return CHOOSE_VOLUME_ADD
 
 
-@require_auth
+@require_auth(permission="inventory")
 async def add_config_volume(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -160,7 +214,7 @@ async def add_config_volume(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return COLLECT_LINKS
 
 
-@require_auth
+@require_auth(permission="inventory")
 async def collect_links(update: Update, context: ContextTypes.DEFAULT_TYPE):
     new_links = extract_links_from_text(update.message.text)
     if new_links:
@@ -171,7 +225,7 @@ async def collect_links(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return COLLECT_LINKS
 
 
-@require_auth
+@require_auth(permission="inventory")
 async def done_collecting(update: Update, context: ContextTypes.DEFAULT_TYPE):
     volume = context.user_data.get("adding_volume")
     links = context.user_data.get("collected_links", [])
@@ -189,7 +243,7 @@ async def done_collecting(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
-@require_auth
+@require_auth(permission="inventory")
 async def stock_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -210,7 +264,7 @@ async def stock_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(message, reply_markup=admin_inventory_keyboard())
 
 
-@require_auth
+@require_auth(permission="prices")
 async def view_prices(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -225,7 +279,7 @@ async def view_prices(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(message, reply_markup=admin_prices_keyboard())
 
 
-@require_auth
+@require_auth(permission="prices")
 async def edit_price_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -233,7 +287,7 @@ async def edit_price_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return CHOOSE_VOLUME_PRICE
 
 
-@require_auth
+@require_auth(permission="prices")
 async def edit_price_enter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -247,7 +301,7 @@ async def edit_price_enter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ENTER_NEW_PRICE
 
 
-@require_auth
+@require_auth(permission="prices")
 async def save_new_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
     volume = context.user_data.get("editing_volume")
     try:
@@ -274,7 +328,7 @@ async def save_new_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
-@require_auth
+@require_auth(permission="users")
 async def search_user_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -282,7 +336,7 @@ async def search_user_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return SEARCH_USER
 
 
-@require_auth
+@require_auth(permission="users")
 async def search_user_result(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query_text = update.message.text.strip()
     async with async_session() as session:
@@ -306,7 +360,7 @@ async def search_user_result(update: Update, context: ContextTypes.DEFAULT_TYPE)
     return ConversationHandler.END
 
 
-@require_auth
+@require_auth(permission="users")
 async def charge_wallet_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -314,7 +368,7 @@ async def charge_wallet_start(update: Update, context: ContextTypes.DEFAULT_TYPE
     return CHARGE_USER_ID
 
 
-@require_auth
+@require_auth(permission="users")
 async def charge_wallet_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         context.user_data["charge_user_id"] = int(update.message.text.strip())
@@ -326,7 +380,7 @@ async def charge_wallet_user(update: Update, context: ContextTypes.DEFAULT_TYPE)
     return CHARGE_AMOUNT
 
 
-@require_auth
+@require_auth(permission="users")
 async def charge_wallet_execute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = context.user_data.get("charge_user_id")
     try:
@@ -353,7 +407,7 @@ async def charge_wallet_execute(update: Update, context: ContextTypes.DEFAULT_TY
     return ConversationHandler.END
 
 
-@require_auth
+@require_auth(permission="reports")
 async def sales_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -382,7 +436,7 @@ async def sales_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(message, reply_markup=admin_reports_keyboard())
 
 
-@require_auth
+@require_auth(permission="users")
 async def user_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -398,6 +452,116 @@ async def user_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     await query.edit_message_text(message, reply_markup=admin_users_keyboard())
+
+
+@require_auth(owner_only=True)
+async def list_admins(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async with async_session() as session:
+        admins = await AdminService.list_admins(session)
+
+    lines = ["Active admins\n"]
+    for admin in admins:
+        role = "owner" if admin.is_owner else "admin"
+        permissions = "all" if admin.is_owner else admin.permissions
+        lines.append(f"{admin.telegram_id} | {role} | {permissions}")
+
+    await update.effective_message.reply_text("\n".join(lines))
+
+
+@require_auth(owner_only=True)
+async def add_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.effective_message.reply_text(
+            f"Usage: /addadmin <telegram_id> <permissions>\nPermissions: {', '.join(ALL_PERMISSIONS)} or all"
+        )
+        return
+
+    try:
+        telegram_id = int(context.args[0])
+    except ValueError:
+        await update.effective_message.reply_text("Telegram ID must be numeric.")
+        return
+
+    permissions = normalize_permissions(context.args[1:] or "reports")
+    if not permissions:
+        await update.effective_message.reply_text(
+            f"Provide at least one valid permission: {', '.join(ALL_PERMISSIONS)} or all"
+        )
+        return
+
+    async with async_session() as session:
+        admin = await AdminService.add_or_update_admin(
+            session,
+            telegram_id=telegram_id,
+            permissions=permissions,
+            created_by=update.effective_user.id,
+            is_owner=False,
+        )
+        await session.commit()
+
+    await update.effective_message.reply_text(f"Admin {admin.telegram_id} saved with permissions: {admin.permissions}")
+
+
+@require_auth(owner_only=True)
+async def remove_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.effective_message.reply_text("Usage: /removeadmin <telegram_id>")
+        return
+
+    try:
+        telegram_id = int(context.args[0])
+    except ValueError:
+        await update.effective_message.reply_text("Telegram ID must be numeric.")
+        return
+
+    if telegram_id == update.effective_user.id:
+        await update.effective_message.reply_text("Owners cannot remove themselves.")
+        return
+
+    async with async_session() as session:
+        removed = await AdminService.remove_admin(session, telegram_id)
+        await session.commit()
+
+    if removed:
+        await update.effective_message.reply_text(f"Admin {telegram_id} removed.")
+    else:
+        await update.effective_message.reply_text("Admin was not found or is an owner.")
+
+
+@require_auth(owner_only=True)
+async def set_admin_permissions(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if len(context.args) < 2:
+        await update.effective_message.reply_text(
+            f"Usage: /setadminperms <telegram_id> <permissions>\nPermissions: {', '.join(ALL_PERMISSIONS)} or all"
+        )
+        return
+
+    try:
+        telegram_id = int(context.args[0])
+    except ValueError:
+        await update.effective_message.reply_text("Telegram ID must be numeric.")
+        return
+
+    permissions = normalize_permissions(context.args[1:])
+    if not permissions:
+        await update.effective_message.reply_text(
+            f"Provide at least one valid permission: {', '.join(ALL_PERMISSIONS)} or all"
+        )
+        return
+
+    async with async_session() as session:
+        admin = await AdminService.get_admin(session, telegram_id)
+        if not admin:
+            await update.effective_message.reply_text("Admin not found.")
+            return
+        if admin.is_owner:
+            await update.effective_message.reply_text("Owner permissions cannot be changed.")
+            return
+        admin.permissions = permissions
+        admin.updated_at = datetime.now(timezone.utc)
+        await session.commit()
+
+    await update.effective_message.reply_text(f"Admin {telegram_id} permissions updated: {permissions}")
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -443,7 +607,12 @@ charge_wallet_conv = ConversationHandler(
 
 admin_handlers = [
     CommandHandler("start", admin_start),
+    CommandHandler("admins", list_admins),
+    CommandHandler("addadmin", add_admin),
+    CommandHandler("removeadmin", remove_admin),
+    CommandHandler("setadminperms", set_admin_permissions),
     CallbackQueryHandler(admin_logout, pattern="^admin_logout$"),
+    CallbackQueryHandler(admin_management_menu, pattern="^admin_admins_menu$"),
     CallbackQueryHandler(admin_menu_navigation, pattern="^(admin_main|admin_inventory_menu|admin_prices_menu|admin_users_menu|admin_reports_menu)$"),
     CallbackQueryHandler(stock_status, pattern="^admin_stock_status$"),
     CallbackQueryHandler(view_prices, pattern="^admin_view_prices$"),

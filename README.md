@@ -45,6 +45,8 @@ ADMIN_BOT_TOKEN=654321:XYZ-ABC9876
 ADMIN_USER_ID=123456789
 # Optional: comma-separated list for multiple admins. ADMIN_USER_ID still works for one admin.
 ADMIN_USER_IDS=123456789,987654321
+# Optional: owner IDs can manage other admins. Defaults to ADMIN_USER_ID.
+OWNER_USER_IDS=123456789
 ADMIN_PASSWORD=replace-with-a-strong-password
 DB_URL=sqlite+aiosqlite:///vpn_shop.db
 SUPPORT_URL=https://t.me/YourSupport
@@ -99,6 +101,19 @@ Use test Telegram bots and a fresh SQLite database.
 5. In the admin bot, charge the test user's wallet.
 6. In the main bot, buy the matching volume.
 7. Confirm wallet balance, purchase history, stock status, and sales report all match.
+
+## Admin Management
+
+Owners can manage admins from the admin bot after logging in:
+
+```text
+/admins
+/addadmin <telegram_id> <permissions>
+/removeadmin <telegram_id>
+/setadminperms <telegram_id> <permissions>
+```
+
+Supported permissions are `inventory`, `prices`, `users`, and `reports`. Use `all` to grant every permission. Owners cannot be removed or downgraded through bot commands.
 
 ## Production Upgrade Notes
 
