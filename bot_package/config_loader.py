@@ -33,6 +33,7 @@ class BotConfig:
     SUPPORT_HANDLE = os.getenv("SUPPORT_HANDLE", "@YourSupport").strip()
     CHANNEL_HANDLE = os.getenv("CHANNEL_HANDLE", "@YourChannel").strip()
     SESSION_TIMEOUT_MINUTES = _parse_int_env("SESSION_TIMEOUT_MINUTES", 30)
+    LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").strip().upper()
 
     @classmethod
     def validate(cls) -> None:
@@ -53,5 +54,7 @@ class BotConfig:
             errors.append("SUPPORT_URL must be a valid URL")
         if cls.SESSION_TIMEOUT_MINUTES <= 0:
             errors.append("SESSION_TIMEOUT_MINUTES must be positive")
+        if cls.LOG_LEVEL not in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
+            errors.append("LOG_LEVEL must be DEBUG, INFO, WARNING, ERROR, or CRITICAL")
         if errors:
             raise RuntimeError("Invalid bot configuration: " + "; ".join(errors))

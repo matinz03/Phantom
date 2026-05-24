@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import logging
 import signal
 
 from bot_package.admin_bot import setup_admin_bot
@@ -8,6 +9,15 @@ from bot_package.database import async_session, engine
 from bot_package.main_bot import setup_main_bot
 from bot_package.models import Base
 from bot_package.services.price_service import PriceService
+
+logger = logging.getLogger(__name__)
+
+
+def configure_logging():
+    logging.basicConfig(
+        level=getattr(logging, BotConfig.LOG_LEVEL, logging.INFO),
+        format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+    )
 
 
 async def _start_polling(app):
@@ -28,6 +38,7 @@ async def _stop_polling(app):
 
 async def main():
     BotConfig.validate()
+    configure_logging()
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -45,6 +56,7 @@ async def main():
             loop.add_signal_handler(sig, stop_event.set)
 
     await asyncio.gather(_start_polling(main_app), _start_polling(admin_app))
+    logger.info("Both Telegram bots are running")
     print("Both Telegram bots are running. Press Ctrl+C to stop.")
 
     try:

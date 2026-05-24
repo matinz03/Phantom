@@ -43,6 +43,21 @@ def test_config_rejects_invalid_support_url(monkeypatch):
         config_loader.BotConfig.validate()
 
 
+def test_config_rejects_invalid_log_level(monkeypatch):
+    monkeypatch.setenv("MAIN_BOT_TOKEN", "123:abc")
+    monkeypatch.setenv("ADMIN_BOT_TOKEN", "456:def")
+    monkeypatch.setenv("ADMIN_USER_ID", "123456")
+    monkeypatch.setenv("ADMIN_PASSWORD", "strong-password")
+    monkeypatch.setenv("LOG_LEVEL", "LOUD")
+
+    import bot_package.config_loader as config_loader
+
+    config_loader = importlib.reload(config_loader)
+
+    with pytest.raises(RuntimeError, match="LOG_LEVEL"):
+        config_loader.BotConfig.validate()
+
+
 @pytest.mark.asyncio
 async def test_negative_wallet_charge_is_rejected(db):
     from bot_package.models import User
