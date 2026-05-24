@@ -1,220 +1,204 @@
-# ============== پیام‌های عمومی ==============
+from ..config_loader import BotConfig
+
+SUPPORT_HANDLE = BotConfig.SUPPORT_HANDLE
+CHANNEL_HANDLE = BotConfig.CHANNEL_HANDLE
+
 MAIN_MENU_TEXT = """
-🌟 **به فروشگاه VPN خوش آمدید!**
+**Welcome to Phantom VPN**
 
-🔒 امن‌ترین سرویس‌های VPN
-⚡️ سرعت بالا و پینگ پایین
-🌍 سرورهای متنوع در سراسر جهان
-
-👇 از منوی زیر انتخاب کنید:
+Secure VPN subscription links with instant delivery after purchase.
+Choose an option from the menu below.
 """
 
 WALLET_TEXT = """
-💎 **کیف پول شما**
+**Your wallet**
 
-💰 موجودی فعلی: **{} تومان**
+Current balance: **{} toman**
 
-📞 برای شارژ کیف پول با پشتیبانی تماس بگیرید:
-@YourSupport
+To top up your wallet, contact support:
+{}
 """
 
 BUY_MENU_TEXT = """
-🛒 **انتخاب پلن اشتراک**
+**Choose a subscription volume**
 
-✨ تمام پلن‌ها به صورت لینک SubLink تحویل فوری می‌شوند
-🔗 قابل استفاده در تمام کلاینت‌ها
-
-👇 حجم مورد نظر خود را انتخاب کنید:
+All plans are delivered as subscription links immediately after purchase.
 """
 
 PURCHASE_SUCCESS = """
-🎉 **خرید با موفقیت انجام شد!**
+**Purchase complete**
 
-📦 حجم: {} گیگابایت
-💰 مبلغ: {} تومان
+Volume: {} GB
+Amount: {} toman
 
-🔗 **لینک اشتراک شما:**
+Your subscription link:
 `{}`
 
-⚠️ لینک را یادداشت کنید و در اختیار دیگران قرار ندهید.
-🔄 برای خرید مجدد به منوی اصلی برگردید.
+Save this link and do not share it with others.
 """
 
-HELP_TEXT = """
-❓ **راهنمای استفاده از ربات**
+HELP_TEXT = f"""
+**How to use Phantom**
 
-1️⃣ ابتدا کیف پول خود را از پشتیبانی شارژ کنید
-2️⃣ از منوی خرید، پلن مورد نظر را انتخاب کنید
-3️⃣ لینک اشتراک بلافاصله پس از کسر موجودی ارسال می‌شود
-4️⃣ لینک را در کلاینت VPN خود وارد کنید
+1. Contact support to charge your wallet.
+2. Choose a volume from the buy menu.
+3. The bot sends your subscription link after your wallet is charged.
+4. Add the link to your VPN client.
 
-📞 **پشتیبانی:** @YourSupport
-💬 **کانال اطلاع‌رسانی:** @YourChannel
+Support: {BotConfig.SUPPORT_HANDLE}
+Channel: {BotConfig.CHANNEL_HANDLE}
 """
 
 NO_PURCHASE = """
-📦 **شما هنوز خریدی انجام نداده‌اید!**
+**No purchases yet**
 
-برای خرید اشتراک به منوی اصلی برگردید.
+Buy a subscription from the main menu to see it here.
 """
 
-# ============== پیام‌های احراز هویت ==============
 AUTH_ENTER_PASSWORD = """
-🔐 **ورود به پنل مدیریت**
+**Admin login**
 
-لطفاً رمز عبور خود را وارد کنید:
-
-⚠️ پیام رمز بلافاصله پس از تأیید حذف می‌شود.
+Enter your admin password. The password message will be deleted after verification.
 """
 
 AUTH_SUCCESS = """
-✅ **احراز هویت موفق**
+**Authentication successful**
 
-🎉 به پنل مدیریت خوش آمدید!
-نشست شما به مدت ۳۰ دقیقه معتبر است.
+Welcome to the admin panel.
 """
 
 AUTH_FAILED = """
-❌ **رمز عبور اشتباه است!**
+**Wrong password**
 
-🔒 دسترسی غیرمجاز ثبت شد.
-لطفاً دوباره تلاش کنید یا با مدیر سیستم تماس بگیرید.
+Please try again.
 """
 
 AUTH_EXPIRED = """
-⏰ **نشست شما منقضی شده است.**
+**Session expired**
 
-لطفاً دوباره رمز عبور خود را وارد کنید:
+Enter your admin password again.
 """
 
 AUTH_REQUIRED = """
-🔒 **برای دسترسی به این بخش نیاز به احراز هویت مجدد دارید.**
+**Authentication required**
 
-لطفاً رمز عبور را وارد کنید:
+Enter your admin password to continue.
 """
 
-# ============== پیام‌های پنل ادمین ==============
 ADMIN_MAIN_MENU = """
-⚙️ **پنل مدیریت فروشگاه VPN**
+**Phantom admin panel**
 
-👑 {} عزیز، خوش آمدید!
-
-یک گزینه را انتخاب کنید:
+Welcome, {}.
+Choose an action:
 """
 
 ADMIN_INVENTORY_MENU = """
-📦 **مدیریت انبار**
+**Inventory management**
 
-مدیریت کانفیگ‌های VPN:
+Add and review VPN subscription stock.
 """
 
 ADMIN_PRICES_MENU = """
-💰 **مدیریت قیمت‌ها**
+**Price management**
 
-مشاهده و ویرایش قیمت پلن‌ها:
+View and update plan prices.
 """
 
 ADMIN_USERS_MENU = """
-👥 **مدیریت کاربران**
+**User management**
 
-جستجو، شارژ کیف پول و آمار:
+Search users, charge wallets, and review user stats.
 """
 
 ADMIN_REPORTS_MENU = """
-📊 **گزارشات فروش**
+**Sales reports**
 
-مشاهده آمار فروش در بازه‌های مختلف:
+Review sales by period.
 """
 
 ADD_CONFIG_VOLUME = """
-📦 **افزودن کانفیگ جدید**
+**Add VPN configs**
 
-لطفاً حجم کانفیگ را انتخاب کنید:
+Choose the volume for the links you want to add.
 """
 
 SEND_LINKS_PROMPT = """
-📝 **ارسال لینک‌های اشتراک**
+**Send subscription links**
 
-📌 هر خط = یک لینک
-📌 می‌توانید چندین پیام پشت سر هم بفرستید
-📌 لینک‌ها به صورت خودکار از متن جدا می‌شوند
-📌 پروتکل‌های پشتیبانی شده: http, https, vmess, vless, trojan, ss, ssr, tuic, hysteria
+Send one or more links. Each line can contain one link.
+Supported protocols: http, https, vmess, vless, trojan, ss, ssr, tuic, hysteria, hysteria2.
 
-✍️ حالا لینک‌ها را بفرستید.
-✅ پس از اتمام /done را بزنید.
-❌ برای لغو /cancel
+Send /done when finished or /cancel to stop.
 """
 
 LINKS_DETECTED = """
-✅ {} لینک جدید شناسایی شد.
-📦 کل لینک‌های جمع‌آوری شده: {}
+Added {} new links.
+Collected links in this batch: {}
 
-📝 ادامه بده یا /done رو بزن.
+Keep sending links or send /done.
 """
 
 NO_LINKS_FOUND = """
-❌ هیچ لینک معتبری در پیام شما پیدا نشد!
-
-لطفاً دوباره تلاش کنید یا /cancel را بزنید.
+No valid subscription links were found. Try again or send /cancel.
 """
 
 STOCK_STATUS_HEADER = """
-📊 **وضعیت موجودی انبار**
+**Inventory status**
 
-🔴 = بحرانی (کمتر از ۵ عدد)
-🟡 = متوسط (بین ۵ تا ۱۰ عدد)
-🟢 = مناسب (بیشتر از ۱۰ عدد)
+Critical: fewer than 5
+Medium: 5 to 10
+Healthy: more than 10
 
 """
 
 PRICE_LIST_HEADER = """
-💰 **قیمت‌های فعلی**
+**Current prices**
 
-📅 آخرین بروزرسانی: {}
+Last checked: {}
 
 """
 
 EDIT_PRICE_PROMPT = """
-✏️ **ویرایش قیمت**
+**Edit price**
 
-قیمت فعلی **{}GB**: {} تومان
+Current price for {}GB: {} toman
 
-💰 قیمت جدید را به تومان وارد کنید:
-مثال: 25000
+Enter the new price in toman.
+Example: 25000
 """
 
 PRICE_UPDATED = """
-✅ **قیمت با موفقیت بروزرسانی شد!**
+**Price updated**
 
-📦 حجم: {}GB
-💰 قیمت جدید: {} تومان
-🕒 زمان: {}
+Volume: {}GB
+New price: {} toman
+Time: {}
 """
 
 SEARCH_USER_PROMPT = """
-🔍 **جستجوی کاربر**
+**Search user**
 
-آیدی عددی یا یوزرنیم کاربر را وارد کنید:
-مثال: `123456789` یا `@username`
+Enter a numeric Telegram ID or username.
+Example: `123456789` or `@username`
 """
 
 CHARGE_WALLET_PROMPT = """
-💳 **شارژ کیف پول کاربر**
+**Charge wallet**
 
-لطفاً آیدی عددی کاربر را وارد کنید:
+Enter the user's numeric Telegram ID.
 """
 
 CHARGE_AMOUNT_PROMPT = """
-💰 **مبلغ شارژ**
+**Charge amount**
 
-چقدر به کیف پول کاربر اضافه شود؟ (به تومان)
-مثال: 50000
+Enter the amount to add in toman.
+Example: 50000
 """
 
 CHARGE_SUCCESS = """
-✅ **کیف پول با موفقیت شارژ شد!**
+**Wallet charged**
 
-👤 کاربر: `{}`
-💰 مبلغ: {} تومان
-🕒 زمان: {}
+User: `{}`
+Amount: {} toman
+Time: {}
 """

@@ -25,6 +25,7 @@ class Config(Base):
     sold_to_user_id = Column(BigInteger, nullable=True)
     sold_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    purchases = relationship("Purchase", back_populates="config")
 
 class Purchase(Base):
     __tablename__ = "purchases"
@@ -35,6 +36,7 @@ class Purchase(Base):
     price = Column(Integer, nullable=False)
     purchased_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     user = relationship("User", back_populates="purchases")
+    config = relationship("Config", back_populates="purchases")
 
 class Transaction(Base):
     __tablename__ = "transactions"
@@ -50,4 +52,16 @@ class Price(Base):
     id = Column(Integer, primary_key=True)
     volume_gb = Column(Integer, unique=True, nullable=False)
     price = Column(Integer, nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class Admin(Base):
+    __tablename__ = "admins"
+    id = Column(Integer, primary_key=True)
+    telegram_id = Column(BigInteger, unique=True, nullable=False)
+    permissions = Column(String, nullable=False, default="")
+    is_owner = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
+    created_by = Column(BigInteger, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

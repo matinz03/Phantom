@@ -1,128 +1,135 @@
-# 🤖 Phantom VPN Bot Suite
+# Phantom VPN Bot Suite
 
-**A professional, secure, and fully asynchronous dual-bot system for automated VPN subscription sales on Telegram. Built with modern Python (3.13+), SQLAlchemy, and the latest Telegram Bot API (v21+).**
+Phantom is an asynchronous dual-bot Telegram system for selling VPN subscription links.
 
-![Python Version](https://img.shields.io/badge/python-3.13%2B-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Status](https://img.shields.io/badge/status-active-brightgreen)
-![Telegram Bot API](https://img.shields.io/badge/Telegram%20Bot%20API-7.0%2B-0099cc)
+- **Main bot:** user-facing shop, wallet balance, purchases, and purchase history.
+- **Admin bot:** inventory, prices, wallet charging, user lookup, and sales reports for one or more configured admins.
 
----
+The implementation uses Python, `python-telegram-bot`, async SQLAlchemy, and SQLite by default.
 
-## 📖 Project Overview
+## Project Structure
 
-**Phantom** is a complete VPN shop solution operating through two separate Telegram bots:
-
-1.  **Public Sales Bot** (`main_bot`): User-facing bot for purchasing VPN subscriptions via a wallet system.
-2.  **Private Admin Bot** (`admin_bot`): Secure management panel for inventory, pricing, user management, and sales reports, protected by password authentication.
-
-The system is designed for **reliability, security, and ease of debugging by AI tools**, with clear separation of concerns, strongly typed async database operations, and comprehensive logging.
-
----
-
-## 🏗️ Architecture & Project Structure
-
-The project follows a modular, service-oriented architecture optimized for clarity and AI-assisted debugging.
-
+```text
 Phantom/
-├── bot_package/
-│ ├── init.py
-│ ├── main_bot.py # Public bot application
-│ ├── admin_bot.py # Admin bot application
-│ ├── config_loader.py # Environment & configuration management
-│ ├── database.py # Async SQLAlchemy engine & session
-│ ├── models.py # ORM models (User, Config, Purchase, etc.)
-│ ├── auth.py # Admin session & password management
-│ ├── handlers/
-│ │ ├── init.py
-│ │ ├── user_handlers.py # User command & callback handlers
-│ │ └── admin_handlers.py # Admin conversation & callback handlers
-│ ├── services/
-│ │ ├── init.py
-│ │ ├── inventory_service.py # Business logic for VPN config stock
-│ │ ├── price_service.py # Dynamic price management logic
-│ │ └── user_service.py # User search, wallet, and stats logic
-│ └── utils/
-│ ├── init.py
-│ ├── keyboards.py # All inline & reply keyboards (with emojis)
-│ ├── messages.py # All user-facing text messages
-│ └── validators.py # Input validation (links, etc.)
-├── .env # Sensitive configuration (tokens, passwords)
-├── .gitignore
-├── run.py # Entry point to run both bots concurrently
-├── setup_all.sh # One-click project setup script for Linux
-└── README.md # This file
+  bot_package/
+    main_bot.py
+    admin_bot.py
+    config_loader.py
+    database.py
+    models.py
+    auth.py
+    handlers/
+    services/
+    utils/
+    requirements.txt
+    setup_all.sh
+    run.py
+  README.md
+```
 
-### Core Design Principles for AI Debugging
+## Setup
 
-1.  **Explicit Imports:** Every file uses absolute imports relative to the `bot_package` root.
-2.  **Type Hinting:** All service and model methods use Python type hints for better static analysis.
-3.  **Separation of Concerns:**
-    - `handlers/` → Route Telegram updates.
-    - `services/` → Contain all business logic and database queries.
-    - `utils/` → Provide static data (keyboards, messages) and validation.
-4.  **Async by Default:** All database operations are asynchronous using `SQLAlchemy[asyncio]` and `aiosqlite`.
+Create a virtual environment and install dependencies:
 
----
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r bot_package/requirements.txt
+```
 
-## 🚀 Quick Start Guide
+Create a `.env` file in the project root:
 
-### Prerequisites
+```dotenv
+MAIN_BOT_TOKEN=123456:ABC-DEF1234
+ADMIN_BOT_TOKEN=654321:XYZ-ABC9876
+ADMIN_USER_ID=123456789
+# Optional: comma-separated list for multiple admins. ADMIN_USER_ID still works for one admin.
+ADMIN_USER_IDS=123456789,987654321
+# Optional: owner IDs can manage other admins. Defaults to ADMIN_USER_ID.
+OWNER_USER_IDS=123456789
+ADMIN_PASSWORD=replace-with-a-strong-password
+DB_URL=sqlite+aiosqlite:///vpn_shop.db
+SUPPORT_URL=https://t.me/YourSupport
+SUPPORT_HANDLE=@YourSupport
+CHANNEL_HANDLE=@YourChannel
+SESSION_TIMEOUT_MINUTES=30
+LOG_LEVEL=INFO
+```
 
-- **Python** 3.13 or later
-- **A Linux VPS** (Ubuntu 24.04 LTS recommended) or local environment
-- **Two Telegram Bot Tokens** from [@BotFather](https://t.me/BotFather)
-- **Your Telegram Numerical ID** from [@userinfobot](https://t.me/userinfobot)
+Run both bots:
 
-### Installation (Fresh VPS)
+```bash
+python -m bot_package.run
+```
 
-1.  **Clone the repository:**
+You can also run the helper script on Linux:
 
-    ```bash
-    git clone https://github.com/Ehsoon05/Phantom.git
-    cd Phantom
-    ```
+```bash
+chmod +x bot_package/setup_all.sh
+./bot_package/setup_all.sh
+```
 
-2.  **Run the setup script:**
+## Security Notes
 
-    ```bash
-    chmod +x setup_all.sh
-    sudo bash setup_all.sh
-    This script will create the virtual environment, install all dependencies, and prompt you to configure the .env file.
-    ```
+- Do not commit `.env` files or bot tokens.
+- Replace the admin password before running the bot.
+- SQLite is the default for local and small deployments. Use PostgreSQL before running high-volume paid traffic.
 
-3.  **Configure .env:**
-    Open the .env file and fill in your details:
+## Verification
 
-        ```dotenv
-        MAIN_BOT_TOKEN=123456:ABC-DEF1234gh...
-        ADMIN_BOT_TOKEN=654321:XYZ-ABC9876ij...
-        ADMIN_USER_ID=123456789
-        ADMIN_PASSWORD=YourSecurePassword123
-        DB_URL=sqlite+aiosqlite:///vpn_shop.db
-        ```
+Run the test suite:
 
-4.  **Start the bots:**
-    ```bash
-    source venv/bin/activate
-    python run.py
-    ```
+```bash
+pytest -q
+```
 
-## 🛡️ Security
+Run a syntax/import smoke check:
 
-- Admin bot requires password on every sensitive action
-- Password messages are auto-deleted
-- Sessions expire after 30 minutes
+```bash
+python -m compileall -q bot_package run.py tests
+MAIN_BOT_TOKEN=123:abc ADMIN_BOT_TOKEN=456:def ADMIN_USER_IDS=123456,789012 ADMIN_PASSWORD=strong-password python -c "import bot_package.run; import bot_package.handlers.admin_handlers; import bot_package.handlers.user_handlers; print('imports ok')"
+```
 
-## 🗄️ Database
+## Manual Smoke Test
 
-SQLite via SQLAlchemy async. Models: User, Config, Purchase, Transaction, Price
+Use test Telegram bots and a fresh SQLite database.
 
-## 🐞 For AI Debugging
+1. Start both bots with `python -m bot_package.run`.
+2. Send `/start` to the admin bot and log in.
+3. Add at least one config link for a volume.
+4. Send `/start` to the main bot with a test user.
+5. In the admin bot, charge the test user's wallet.
+6. In the main bot, buy the matching volume.
+7. Confirm wallet balance, purchase history, stock status, and sales report all match.
 
-When debugging, always specify:
+## Admin Management
 
-1. Which file has the error
-2. Full error traceback
-3. What user action triggered it
-4. Relevant service/handler name
+Owners can manage admins from the admin bot after logging in:
+
+```text
+/admins
+/addadmin <telegram_id> <permissions>
+/removeadmin <telegram_id>
+/setadminperms <telegram_id> <permissions>
+```
+
+Supported permissions are `inventory`, `prices`, `users`, and `reports`. Use `all` to grant every permission. Owners cannot be removed or downgraded through bot commands.
+
+## Production Upgrade Notes
+
+- SQLite can work for a small bot, but concurrent paid purchases should move to PostgreSQL.
+- Add Alembic migrations before changing schemas in production.
+- Put the bot behind process supervision such as systemd, Docker, or a managed worker service.
+- Keep `LOG_LEVEL=INFO` in normal operation and use `DEBUG` only during troubleshooting.
+
+## Current Capabilities
+
+- User registration on `/start`
+- Wallet balance display
+- Volume-based VPN purchase flow
+- Purchase history
+- Admin password session
+- Admin stock loading from subscription links
+- Admin price editing
+- Admin wallet charging
+- Basic sales and user reports
