@@ -8,6 +8,7 @@ from bot_package.config_loader import BotConfig
 from bot_package.database import async_session, engine
 from bot_package.main_bot import setup_main_bot
 from bot_package.models import Base
+from bot_package.services.admin_service import AdminService
 from bot_package.services.price_service import PriceService
 
 logger = logging.getLogger(__name__)
@@ -45,6 +46,7 @@ async def main():
 
     async with async_session() as session:
         await PriceService.init_default_prices(session)
+        await AdminService.sync_configured_admins(session)
 
     main_app = await setup_main_bot()
     admin_app = await setup_admin_bot()

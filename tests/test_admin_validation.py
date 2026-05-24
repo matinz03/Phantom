@@ -58,6 +58,40 @@ def test_config_rejects_invalid_log_level(monkeypatch):
         config_loader.BotConfig.validate()
 
 
+def test_config_accepts_multiple_admin_ids(monkeypatch):
+    monkeypatch.delenv("ADMIN_USER_ID", raising=False)
+    monkeypatch.setenv("MAIN_BOT_TOKEN", "123:abc")
+    monkeypatch.setenv("ADMIN_BOT_TOKEN", "456:def")
+    monkeypatch.setenv("ADMIN_USER_IDS", "123456, 789012, invalid, 123456")
+    monkeypatch.setenv("ADMIN_PASSWORD", "strong-password")
+
+    import bot_package.config_loader as config_loader
+
+    config_loader = importlib.reload(config_loader)
+
+    assert config_loader.BotConfig.ADMIN_USER_IDS == (123456, 789012)
+    assert config_loader.BotConfig.ADMIN_USER_ID == 123456
+    assert config_loader.BotConfig.is_admin(789012) is True
+    assert config_loader.BotConfig.is_admin(111111) is False
+    config_loader.BotConfig.validate()
+
+
+def test_config_keeps_legacy_single_admin_id(monkeypatch):
+    monkeypatch.delenv("ADMIN_USER_IDS", raising=False)
+    monkeypatch.setenv("MAIN_BOT_TOKEN", "123:abc")
+    monkeypatch.setenv("ADMIN_BOT_TOKEN", "456:def")
+    monkeypatch.setenv("ADMIN_USER_ID", "123456")
+    monkeypatch.setenv("ADMIN_PASSWORD", "strong-password")
+
+    import bot_package.config_loader as config_loader
+
+    config_loader = importlib.reload(config_loader)
+
+    assert config_loader.BotConfig.ADMIN_USER_IDS == (123456,)
+    assert config_loader.BotConfig.is_admin(123456) is True
+    config_loader.BotConfig.validate()
+
+
 @pytest.mark.asyncio
 async def test_negative_wallet_charge_is_rejected(db):
     from bot_package.models import User

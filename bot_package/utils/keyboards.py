@@ -54,6 +54,7 @@ def admin_main_keyboard():
         [InlineKeyboardButton("Prices", callback_data="admin_prices_menu")],
         [InlineKeyboardButton("Users", callback_data="admin_users_menu")],
         [InlineKeyboardButton("Reports", callback_data="admin_reports_menu")],
+        [InlineKeyboardButton("Admins", callback_data="admin_admins_menu")],
         [InlineKeyboardButton("Log out", callback_data="admin_logout")],
     ]
     return InlineKeyboardMarkup(buttons)
@@ -107,6 +108,14 @@ def admin_reports_keyboard():
         [InlineKeyboardButton("Today", callback_data="report_1")],
         [InlineKeyboardButton("This week", callback_data="report_7")],
         [InlineKeyboardButton("This month", callback_data="report_30")],
+        [InlineKeyboardButton("Back", callback_data="admin_main")],
+    ]
+    return InlineKeyboardMarkup(buttons)
+
+
+def admin_management_keyboard():
+    buttons = [
+        [InlineKeyboardButton("Refresh list", callback_data="admin_admins_menu")],
         [InlineKeyboardButton("Back", callback_data="admin_main")],
     ]
     return InlineKeyboardMarkup(buttons)

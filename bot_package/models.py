@@ -53,3 +53,15 @@ class Price(Base):
     volume_gb = Column(Integer, unique=True, nullable=False)
     price = Column(Integer, nullable=False)
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class Admin(Base):
+    __tablename__ = "admins"
+    id = Column(Integer, primary_key=True)
+    telegram_id = Column(BigInteger, unique=True, nullable=False)
+    permissions = Column(String, nullable=False, default="")
+    is_owner = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
+    created_by = Column(BigInteger, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
