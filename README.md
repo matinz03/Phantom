@@ -49,6 +49,7 @@ SUPPORT_URL=https://t.me/YourSupport
 SUPPORT_HANDLE=@YourSupport
 CHANNEL_HANDLE=@YourChannel
 SESSION_TIMEOUT_MINUTES=30
+LOG_LEVEL=INFO
 ```
 
 Run both bots:
@@ -69,6 +70,40 @@ chmod +x bot_package/setup_all.sh
 - Do not commit `.env` files or bot tokens.
 - Replace the admin password before running the bot.
 - SQLite is the default for local and small deployments. Use PostgreSQL before running high-volume paid traffic.
+
+## Verification
+
+Run the test suite:
+
+```bash
+pytest -q
+```
+
+Run a syntax/import smoke check:
+
+```bash
+python -m compileall -q bot_package run.py tests
+MAIN_BOT_TOKEN=123:abc ADMIN_BOT_TOKEN=456:def ADMIN_USER_ID=123456 ADMIN_PASSWORD=strong-password python -c "import bot_package.run; import bot_package.handlers.admin_handlers; import bot_package.handlers.user_handlers; print('imports ok')"
+```
+
+## Manual Smoke Test
+
+Use test Telegram bots and a fresh SQLite database.
+
+1. Start both bots with `python -m bot_package.run`.
+2. Send `/start` to the admin bot and log in.
+3. Add at least one config link for a volume.
+4. Send `/start` to the main bot with a test user.
+5. In the admin bot, charge the test user's wallet.
+6. In the main bot, buy the matching volume.
+7. Confirm wallet balance, purchase history, stock status, and sales report all match.
+
+## Production Upgrade Notes
+
+- SQLite can work for a small bot, but concurrent paid purchases should move to PostgreSQL.
+- Add Alembic migrations before changing schemas in production.
+- Put the bot behind process supervision such as systemd, Docker, or a managed worker service.
+- Keep `LOG_LEVEL=INFO` in normal operation and use `DEBUG` only during troubleshooting.
 
 ## Current Capabilities
 

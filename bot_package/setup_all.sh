@@ -22,6 +22,7 @@ SUPPORT_URL=https://t.me/YourSupport
 SUPPORT_HANDLE=@YourSupport
 CHANNEL_HANDLE=@YourChannel
 SESSION_TIMEOUT_MINUTES=30
+LOG_LEVEL=INFO
 EOFENV
   echo "Created .env. Fill in the Telegram tokens, admin ID, and admin password before running."
 fi
