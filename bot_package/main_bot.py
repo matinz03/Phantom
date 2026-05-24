@@ -1,6 +1,7 @@
 from telegram.ext import Application
 from .config_loader import BotConfig
-from .database import engine, Base
+from .database import engine
+from .models import Base
 from .handlers.user_handlers import user_handlers
 
 async def setup_main_bot():

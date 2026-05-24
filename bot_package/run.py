@@ -1,28 +1,57 @@
 import asyncio
-from bot_package.main_bot import setup_main_bot
+import contextlib
+import signal
+
 from bot_package.admin_bot import setup_admin_bot
-from bot_package.database import async_session, engine, Base
+from bot_package.config_loader import BotConfig
+from bot_package.database import async_session, engine
+from bot_package.main_bot import setup_main_bot
+from bot_package.models import Base
 from bot_package.services.price_service import PriceService
 
+
+async def _start_polling(app):
+    await app.initialize()
+    await app.start()
+    if app.updater is None:
+        raise RuntimeError("Application updater is not available for polling")
+    await app.updater.start_polling()
+
+
+async def _stop_polling(app):
+    if app.updater is not None and app.updater.running:
+        await app.updater.stop()
+    if app.running:
+        await app.stop()
+    await app.shutdown()
+
+
 async def main():
-    # ساخت جداول
+    BotConfig.validate()
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
-    # مقداردهی اولیه قیمت‌ها
+
     async with async_session() as session:
         await PriceService.init_default_prices(session)
-    
+
     main_app = await setup_main_bot()
     admin_app = await setup_admin_bot()
-    
-    print("✅ بات‌ها آماده اجرا هستند...")
-    
-    async with main_app, admin_app:
-        await asyncio.gather(
-            main_app.run_polling(),
-            admin_app.run_polling()
-        )
+
+    stop_event = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        with contextlib.suppress(NotImplementedError):
+            loop.add_signal_handler(sig, stop_event.set)
+
+    await asyncio.gather(_start_polling(main_app), _start_polling(admin_app))
+    print("Both Telegram bots are running. Press Ctrl+C to stop.")
+
+    try:
+        await stop_event.wait()
+    finally:
+        await asyncio.gather(_stop_polling(main_app), _stop_polling(admin_app))
+
 
 if __name__ == "__main__":
     asyncio.run(main())
